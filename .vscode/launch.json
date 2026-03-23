@@ -1,0 +1,49 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Vehicles Service (Debug + Reload)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "uvicorn",
+      "args": [
+        "services.vehicles.app.main:app",
+        "--host", "127.0.0.1",
+        "--port", "8001",
+        "--reload"
+      ],
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}"
+      },
+      "justMyCode": false
+    },
+    {
+      "name": "API Gateway (Debug + Reload)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "uvicorn",
+      "args": [
+        "apps.api_gateway.main:app",
+        "--host", "127.0.0.1",
+        "--port", "8000",
+        "--reload"
+      ],
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}"
+      },
+      "justMyCode": false
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Gateway + Vehicles (One Click)",
+      "configurations": [
+        "API Gateway (Debug + Reload)",
+        "Vehicles Service (Debug + Reload)"
+      ],
+      "stopAll": true
+    }
+  ]
+}
