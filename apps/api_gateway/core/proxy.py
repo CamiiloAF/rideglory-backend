@@ -1,7 +1,7 @@
 import os
 from typing import Any
 
-from fastapi import HTTPException, Response
+from fastapi import HTTPException, Request, Response
 import httpx
 
 
@@ -36,20 +36,25 @@ def filter_response_headers(headers: Mapping[str, str]) -> dict[str, str]:
     }
 
 async def forward_request(
-   request: ForwardRequestParams
+   request: Request,
+   params: ForwardRequestParams
 ) -> Response:
     forwarded_headers = filter_request_headers(request.headers)
-    url = f"{request.base_url}{request.path}"
+    query_params = dict(request.query_params)
+    url = f"{params.base_url.rstrip('/')}/{params.path.lstrip('/')}"
 
     try:
-        async with httpx.AsyncClient(timeout=5.0) as client:
-            resp = await client.request(request.method, url, json=request.body)
+        client = request.app.state.http_client
+        resp = await client.request(request.method, url, json=request.body)
+    except httpx.ConnectError as exc:
+        raise HTTPException(status_code=502, detail="Upstream unavailable") from exc
+    except (httpx.ReadTimeout, httpx.WriteTimeout, httpx.PoolTimeout) as exc:
+        raise HTTPException(status_code=504, detail="Upstream timeout") from exc
     except httpx.HTTPError as exc:
-        raise HTTPException(status_code=502, detail=f"Service unavailable: {exc}") from exc
-    
+        raise HTTPException(status_code=502, detail="Gateway upstream error") from exc
+
     return Response(
         content=resp.content,
         status_code=resp.status_code,
-        media_type=resp.headers.get("content-type", "application/json"),
         headers=filter_response_headers(resp.headers),
     )
