@@ -1,19 +1,27 @@
-import os
+from contextlib import asynccontextmanager
 from typing import Any
 
 import httpx
-from fastapi import FastAPI, HTTPException, Response
-
-app = FastAPI(title="Rideglory API Gateway")
-VEHICLES_SERVICE_BASE_URL = os.getenv("VEHICLES_SERVICE_BASE_URL", "http://localhost:8001")
-
-
-@app.get("/health")
-async def health() -> dict[str, str]:
-    return {"status": "ok"}
+from fastapi import FastAPI
+from apps.api_gateway.core.http_client import build_http_client, close_http_client
+from apps.api_gateway.core.settings import VEHICLES_SERVICE_BASE_URL
+from apps.api_gateway.routes.vehicles import router as vehicles_router
 
 
-@app.get("/health/services")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    app.state.http_client = build_http_client()
+    try:
+        yield
+    finally:
+        await close_http_client(app.state.http_client)
+
+
+app = FastAPI(title="Rideglory API Gateway", lifespan=lifespan)
+
+app.include_router(vehicles_router)
+
+@app.get("/api/health/services")
 async def services_health() -> dict[str, Any]:
     services: dict[str, dict[str, Any]] = {
         "api_gateway": {"status": "ok"},
@@ -21,8 +29,7 @@ async def services_health() -> dict[str, Any]:
     }
 
     try:
-        async with httpx.AsyncClient(timeout=3.0) as client:
-            response = await client.get(f"{VEHICLES_SERVICE_BASE_URL}/health")
+        response = await app.state.http_client.get(f"{VEHICLES_SERVICE_BASE_URL}/health")
 
         services["vehicles_service"] = {
             "status": "ok" if response.status_code == 200 else "unhealthy",
@@ -38,43 +45,3 @@ async def services_health() -> dict[str, Any]:
     )
     return {"status": overall_status, "services": services}
 
-
-@app.post("/api/v1/vehicles")
-async def create_vehicle_proxy(payload: dict[str, Any]) -> Response:
-    try:
-        async with httpx.AsyncClient(timeout=5.0) as client:
-            response = await client.post(
-                f"{VEHICLES_SERVICE_BASE_URL}/api/v1/vehicles",
-                json=payload,
-            )
-    except httpx.HTTPError as exc:
-        raise HTTPException(
-            status_code=502,
-            detail=f"Vehicles service unavailable: {exc}",
-        ) from exc
-
-    return Response(
-        content=response.content,
-        status_code=response.status_code,
-        media_type=response.headers.get("content-type", "application/json"),
-    )
-
-
-@app.get("/api/v1/vehicles/{user_id}")
-async def get_vehicles_by_user_id_proxy(user_id: str) -> Response:
-    try:
-        async with httpx.AsyncClient(timeout=5.0) as client:
-            response = await client.get(
-                f"{VEHICLES_SERVICE_BASE_URL}/api/v1/vehicles/{user_id}",
-            )
-    except httpx.HTTPError as exc:
-        raise HTTPException(
-            status_code=502,
-            detail=f"Vehicles service unavailable: {exc}",
-        ) from exc
-
-    return Response(
-        content=response.content,
-        status_code=response.status_code,
-        media_type=response.headers.get("content-type", "application/json"),
-    )
