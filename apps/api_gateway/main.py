@@ -4,12 +4,16 @@ from typing import Any
 import httpx
 from fastapi import FastAPI
 from apps.api_gateway.core.http_client import build_http_client, close_http_client
+from apps.api_gateway.core.loguru_config import configure_logging
 from apps.api_gateway.core.settings import VEHICLES_SERVICE_BASE_URL
+from apps.api_gateway.middleware.request_id import RequestIDMiddleware
 from apps.api_gateway.routes.vehicles import router as vehicles_router
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    configure_logging()
+    
     app.state.http_client = build_http_client()
     try:
         yield
@@ -18,6 +22,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Rideglory API Gateway", lifespan=lifespan)
+
+app.add_middleware(RequestIDMiddleware)
 
 app.include_router(vehicles_router)
 

@@ -1,0 +1,20 @@
+services:
+  api_gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile.api_gateway
+    ports:
+      - "8000:8000"
+    environment:
+      LOG_LEVEL: INFO
+      LOG_JSON: "true"
+      VEHICLES_SERVICE_BASE_URL: http://vehicles:8001
+    depends_on:
+      - vehicles
+
+  vehicles:
+    build:
+      context: .
+      dockerfile: Dockerfile.vehicles
+    ports:
+      - "8001:8001"

@@ -4,6 +4,10 @@ Este documento explica como evolucionar el proxy actual del API Gateway para que
 
 La idea es que avances por iteraciones pequenas y entendiendo el por que de cada cambio.
 
+**Logs (Loguru) y Docker (stdout/stderr):** ver [README_LOGGING.md](./README_LOGGING.md).
+
+**Request ID, contexto async, unificación con Uvicorn y campos del proxy:** ver [README_REQUEST_ID_AND_LOG_UNIFICATION.md](./README_REQUEST_ID_AND_LOG_UNIFICATION.md).
+
 ## 1) Estado actual (resumen)
 
 Hoy `forward_request`:
