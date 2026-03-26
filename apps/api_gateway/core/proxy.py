@@ -1,12 +1,9 @@
 import time
+from collections.abc import Mapping
 from typing import Any, cast
 
-from fastapi import HTTPException, Request, Response
 import httpx
-
-
-from collections.abc import Mapping
-
+from fastapi import HTTPException, Request, Response
 from loguru import logger
 
 from apps.api_gateway.core.proxy_types import ForwardRequestParams
@@ -41,7 +38,7 @@ def log_proxy_error(exc: Exception, params: ForwardRequestParams, start_time: fl
         path=params.path,
         method=params.method.value,
     ).warning("proxy_upstream_error error_type={error_type}", error_type=type(exc).__name__)
-    
+
 def log_proxy_success(
     *, params: ForwardRequestParams, duration_ms: float, upstream_status: int
 ) -> None:
@@ -74,7 +71,11 @@ async def forward_request(
     if query_params:
         request_kwargs["params"] = query_params
     if params.body is not None:
-        request_kwargs["json"] = params.body
+        request_kwargs["json"] = (
+            params.body.model_dump(mode="json")
+            if hasattr(params.body, "model_dump")
+            else params.body
+        )
     else:
         body_bytes = await request.body()
         if body_bytes:

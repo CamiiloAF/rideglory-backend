@@ -1,48 +1,52 @@
 from typing import Annotated
+
 from fastapi import APIRouter, Depends, Path
-from pydantic import BaseModel
 
 from services.vehicles.app.application.use_cases.create_vehicle import (
     CreateVehicleUseCase,
 )
-from services.vehicles.app.application.use_cases.get_vehicles_by_user_id import GetVehiclesByUserIdUseCase
-from services.vehicles.app.dependencies.container import get_create_vehicle_use_case, get_get_vehicles_by_user_id_use_case
-from services.vehicles.app.domain.entities.vehicle import Vehicle
+from services.vehicles.app.application.use_cases.get_vehicles_by_user_id import (
+    GetVehiclesByUserIdUseCase,
+)
+from services.vehicles.app.application.use_cases.update_vehicle import (
+    UpdateVehicleUseCase,
+)
+from services.vehicles.app.dependencies.container import (
+    get_create_vehicle_use_case,
+    get_get_vehicles_by_user_id_use_case,
+    get_update_vehicle_use_case,
+)
+from services.vehicles.app.domain.entities.vehicle import (
+    CreateVehicle,
+    UpdateVehicle,
+    Vehicle,
+)
 
 router = APIRouter(prefix="/vehicles", tags=["vehicles"])
 
 
-class CreateVehicleRequest(BaseModel):
-    plate: str
-    brand: str
-
-
-class CreateVehicleResponse(BaseModel):
-    id: str
-    plate: str
-    brand: str
-
-
-class GetVehiclesByUserIdResponse(BaseModel):
-    vehicles: list[Vehicle]
-
-
-@router.post("", response_model=CreateVehicleResponse)
+@router.post("", response_model=Vehicle)
 async def create_vehicle(
-    request: CreateVehicleRequest,
+    request: CreateVehicle,
     use_case: CreateVehicleUseCase = Depends(get_create_vehicle_use_case),
-) -> CreateVehicleResponse:
-    vehicle = use_case.execute(plate=request.plate, brand=request.brand)
-    return CreateVehicleResponse(
-        id=vehicle.id,
-        plate=vehicle.plate,
-        brand=vehicle.brand,
-    )
+) -> Vehicle:
+    return use_case.execute(request)
 
-@router.get("/{user_id}", response_model=GetVehiclesByUserIdResponse)
+
+@router.get("/{user_id}", response_model=list[Vehicle])
 async def get_vehicles_by_user_id(
-    use_case: GetVehiclesByUserIdUseCase = Depends(get_get_vehicles_by_user_id_use_case),
-    user_id: str = Annotated[str, Path(description="The ID of the user")]
-) -> GetVehiclesByUserIdResponse:
-    vehicles = use_case.execute(user_id)
-    return GetVehiclesByUserIdResponse(vehicles=vehicles)
+    use_case: Annotated[
+        GetVehiclesByUserIdUseCase, Depends(get_get_vehicles_by_user_id_use_case)
+    ],
+    user_id: Annotated[str, Path(description="The ID of the user")],
+) -> list[Vehicle]:
+    return use_case.execute(user_id)
+
+
+@router.put("/{vehicle_id}", response_model=Vehicle)
+async def update_vehicle(
+    request: UpdateVehicle,
+    use_case: Annotated[UpdateVehicleUseCase, Depends(get_update_vehicle_use_case)],
+    vehicle_id: Annotated[str, Path(description="The ID of the vehicle")],
+) -> Vehicle:
+    return use_case.execute(vehicle_id, request)

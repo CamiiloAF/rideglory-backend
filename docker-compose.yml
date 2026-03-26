@@ -1,20 +1,22 @@
 services:
-  api_gateway:
-    build:
-      context: .
-      dockerfile: Dockerfile.api_gateway
-    ports:
-      - "8000:8000"
+  postgres:
+    image: postgres:16-alpine
+    container_name: rideglory-postgres
+    restart: unless-stopped
     environment:
-      LOG_LEVEL: INFO
-      LOG_JSON: "true"
-      VEHICLES_SERVICE_BASE_URL: http://vehicles:8001
-    depends_on:
-      - vehicles
-
-  vehicles:
-    build:
-      context: .
-      dockerfile: Dockerfile.vehicles
+      # Official postgres image creates this DB and user on first run only.
+      POSTGRES_USER:  ${DATABASE_USER}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+      POSTGRES_DB: ${DATABASE_NAME}
     ports:
-      - "8001:8001"
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U  ${DATABASE_USER} -d ${DATABASE_NAME}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  postgres_data:

@@ -1,8 +1,19 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 
 from services.vehicles.app.api.v1.routes.vehicles import router as vehicles_router
+from services.vehicles.app.infrastructure.models.vehicle import VehicleModel
+from shared.infrastructure.database.database import Base, engine
 
-app = FastAPI(title="Vehicles Service")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    Base.metadata.create_all(bind=engine, tables=[VehicleModel.__table__])
+    yield
+
+
+app = FastAPI(title="Vehicles Service", lifespan=lifespan)
 app.include_router(vehicles_router, prefix="/api/v1")
 
 

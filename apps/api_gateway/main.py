@@ -3,29 +3,31 @@ from typing import Any
 
 import httpx
 from fastapi import FastAPI
+
 from apps.api_gateway.core.http_client import build_http_client, close_http_client
 from apps.api_gateway.core.loguru_config import configure_logging
 from apps.api_gateway.core.settings import VEHICLES_SERVICE_BASE_URL
 from apps.api_gateway.middleware.request_id import RequestIDMiddleware
-from apps.api_gateway.routes.vehicles import router as vehicles_router
+from apps.api_gateway.routes.vehicles import gateway_router as vehicles_gateway_router
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(api: FastAPI):
     configure_logging()
-    
-    app.state.http_client = build_http_client()
+
+    api.state.http_client = build_http_client()
     try:
         yield
     finally:
-        await close_http_client(app.state.http_client)
+        await close_http_client(api.state.http_client)
 
 
 app = FastAPI(title="Rideglory API Gateway", lifespan=lifespan)
 
 app.add_middleware(RequestIDMiddleware)
 
-app.include_router(vehicles_router)
+app.include_router(vehicles_gateway_router)
+
 
 @app.get("/api/health/services")
 async def services_health() -> dict[str, Any]:
@@ -35,7 +37,9 @@ async def services_health() -> dict[str, Any]:
     }
 
     try:
-        response = await app.state.http_client.get(f"{VEHICLES_SERVICE_BASE_URL}/health")
+        response = await app.state.http_client.get(
+            f"{VEHICLES_SERVICE_BASE_URL}/health"
+        )
 
         services["vehicles_service"] = {
             "status": "ok" if response.status_code == 200 else "unhealthy",
@@ -45,9 +49,6 @@ async def services_health() -> dict[str, Any]:
         services["vehicles_service"] = {"status": "unreachable", "error": str(exc)}
 
     overall_status = (
-        "ok"
-        if services["vehicles_service"]["status"] == "ok"
-        else "degraded"
+        "ok" if services["vehicles_service"]["status"] == "ok" else "degraded"
     )
     return {"status": overall_status, "services": services}
-

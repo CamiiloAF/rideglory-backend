@@ -102,3 +102,26 @@ You can override downstream URL with:
 ```bash
 export VEHICLES_SERVICE_BASE_URL=http://localhost:8001
 ```
+
+## Linting (Ruff)
+
+Install dev tools:
+
+```bash
+pip install -r requirements-dev.txt
+```
+
+Run the linter:
+
+```bash
+ruff check apps services shared main.py
+```
+
+Auto-fix safe issues and format:
+
+```bash
+ruff check apps services shared main.py --fix
+ruff format apps services shared main.py
+```
+
+Configuration lives in `pyproject.toml`. In VS Code / Cursor, install the **Ruff** extension (`charliermarsh.ruff`); the workspace uses it as the default Python formatter and can fix/organize imports on save.

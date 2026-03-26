@@ -5,3 +5,5 @@ pydantic-settings
 pytest
 httpx
 loguru
+SQLAlchemy
+psycopg2-binary

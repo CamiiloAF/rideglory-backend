@@ -6,5 +6,6 @@
   ],
   "cursorpyright.analysis.extraPaths": [
     "${workspaceFolder}"
-  ]
+  ],
+  "pylint.args": ["--disable=missing-function-docstring, missing-module-docstring, too-few-public-methods"]
 }

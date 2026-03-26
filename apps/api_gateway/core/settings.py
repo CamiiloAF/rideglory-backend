@@ -1,6 +1,8 @@
 import os
 
-VEHICLES_SERVICE_BASE_URL = os.getenv("VEHICLES_SERVICE_BASE_URL", "http://localhost:8001")
+VEHICLES_SERVICE_BASE_URL = os.getenv(
+    "VEHICLES_SERVICE_BASE_URL", "http://localhost:8001"
+)
 
 # Timeouts (segundos)
 HTTP_CONNECT_TIMEOUT = float(os.getenv("HTTP_CONNECT_TIMEOUT", "2.0"))
@@ -24,4 +26,5 @@ HOP_BY_HOP_HEADERS = {
     "transfer-encoding",
     "upgrade",
     "host",
+    "content-length",
 }
